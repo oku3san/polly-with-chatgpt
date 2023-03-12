@@ -24,7 +24,7 @@ func main() {
             Messages: []openai.ChatCompletionMessage{
                 {
                     Role:    openai.ChatMessageRoleUser,
-                    Content: "Hello!",
+                    Content: "Hello",
                 },
             },
         },
@@ -49,7 +49,7 @@ func main() {
     input := &polly.SynthesizeSpeechInput{
         OutputFormat: types.OutputFormatMp3,
         Text:         aws.String(msg),
-        VoiceId:      types.VoiceIdJoanna,
+        VoiceId:      types.VoiceIdMizuki,
     }
 
     output, err := pollyClient.SynthesizeSpeech(context.Background(), input)
