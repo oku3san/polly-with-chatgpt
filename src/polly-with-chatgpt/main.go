@@ -1,1 +1,7 @@
-package polly_with_chatgpt
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("initial")
+}
