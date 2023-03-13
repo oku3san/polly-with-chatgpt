@@ -1,6 +1,7 @@
 package main
 
 import (
+    "bufio"
     "context"
     "fmt"
     "github.com/aws/aws-sdk-go-v2/aws"
@@ -15,28 +16,48 @@ import (
 )
 
 func main() {
+    reader := bufio.NewReader(os.Stdin)
+    question, _ := reader.ReadString('\n')
+
+    answer, err := askChatGpt(question)
+    if err != nil {
+        log.Fatalf("ChatCompletion error: %v\n", err)
+    }
+
+    generateMp3WithPolly(answer.Choices[0].Message.Content)
+
+    // mp3ファイルを再生
+    excerr := exec.Command("afplay", "/tmp/gopolly.mp3").Run()
+    if excerr != nil {
+        fmt.Println(excerr.Error())
+        return
+    }
+}
+
+func askChatGpt(question string) (openai.ChatCompletionResponse, error) {
     token := os.Getenv("OPENAI_API_KEY")
     client := openai.NewClient(token)
-    resp, err := client.CreateChatCompletion(
+    response, err := client.CreateChatCompletion(
         context.Background(),
         openai.ChatCompletionRequest{
             Model: openai.GPT3Dot5Turbo,
             Messages: []openai.ChatCompletionMessage{
                 {
                     Role:    openai.ChatMessageRoleUser,
-                    Content: "Hello",
+                    Content: question,
                 },
             },
         },
     )
-
     if err != nil {
-        fmt.Printf("ChatCompletion error: %v\n", err)
-        return
+        return openai.ChatCompletionResponse{}, err
     }
 
-    msg := resp.Choices[0].Message.Content
+    //msg := resp.Choices[0].Message.Content
+    return response, nil
+}
 
+func generateMp3WithPolly(text string) {
     // AWS Config の情報を取得
     ctx := context.Background()
     cfg, err := config.LoadDefaultConfig(ctx)
@@ -48,7 +69,7 @@ func main() {
 
     input := &polly.SynthesizeSpeechInput{
         OutputFormat: types.OutputFormatMp3,
-        Text:         aws.String(msg),
+        Text:         aws.String(text),
         VoiceId:      types.VoiceIdMizuki,
     }
 
@@ -62,10 +83,5 @@ func main() {
     content, err := ioutil.ReadAll(output.AudioStream)
     ioutil.WriteFile("/tmp/gopolly.mp3", content, os.ModePerm)
 
-    // mp3ファイルを再生
-    exerr := exec.Command("afplay", "/tmp/gopolly.mp3").Run()
-    if exerr != nil {
-        fmt.Println(exerr.Error())
-        return
-    }
+    return
 }
